@@ -40,5 +40,10 @@ export default {
       required: false,
     },
   },
+  methods: {
+    handleSelect() {
+      console.log('Selected');
+    },
+  }
 }
 </script>

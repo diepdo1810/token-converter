@@ -9,7 +9,7 @@
         <p class="text-sm text-muted-foreground">Convert between different AI models using an open API.</p>
       </div>
       <div class="p-6">
-        <form class="space-y-4">
+        <the-form>
           <div class="grid grid-cols-2 gap-4">
             <div class="space-y-2">
               <label
@@ -23,26 +23,13 @@
                   id="prompt"
                   placeholder="Enter your prompt"
                   rows="3"
+                  v-model="formData.prompt"
               ></textarea>
             </div>
-            <base-drop-down
-                id="dropdownDefaultButton"
-                label="Model"
-                labelBtn="Select model"
-                :selects="['GPT-4', 'GPT-4o', 'GPT-3.5']"
-                selectLabel="Select model"
-                dropDown="dropDown"
-            ></base-drop-down>
+            <base-select-el select-label="Select models" label="Model" :selects="models" selectedValue="model"></base-select-el>
           </div>
           <div class="grid grid-cols-2 gap-4">
-            <base-drop-down
-                id="dropdownDefaultButton1"
-                label="Language"
-                labelBtn="Select language"
-                :selects="['', 'English', 'Vietnamese']"
-                selectLabel="Select language"
-                dropDown="dropDown1"
-            ></base-drop-down>
+            <base-select-el select-label="Select languages" label="Language" :selects="languages" selectedValue="language"></base-select-el>
             <div class="flex items-end">
               <button
                   class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
@@ -52,7 +39,7 @@
               </button>
             </div>
           </div>
-        </form>
+        </the-form>
       </div>
       <div class="flex items-center p-6">
         <div class="grid gap-2">
@@ -72,9 +59,59 @@
 </template>
 
 <script>
+import axios from 'axios';
+import BaseSelectEl from "@/components/UI/BaseSelectEl.vue";
+import TheForm from "@/components/layouts/TheForm.vue";
 
 export default {
   name: 'App',
+  components: {TheForm, BaseSelectEl},
+  provide() {
+    return {
+      handleChange: this.handleChange,
+      submitForm: this.calculateTokens,
+    };
+  },
+  data() {
+    return {
+      formData: [
+        prompt,
+      ],
+      models: ['GPT-4-32k', 'GPT-4', 'GPT-3.5-Turbo'],
+      languages: ['English', 'Vietnamese'],
+      result: null,
+    };
+  },
+  methods: {
+    handleChange(event) {
+      if (event.target.dataset.value === 'model') {
+        this.formData.model = event.target.value;
+      } else {
+        this.formData.language = event.target.value;
+      }
+    },
+    async calculateTokens() {
+      // convert array to object
+      const data = Object.assign({}, this.formData);
+      console.log(data);
+      try {
+        const response = await axios.post('https://tiktoken-beta.vercel.app/calculate_tokens', data, {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        this.result = response.data;
+        console.log(this.result);
+      } catch (error) {
+        if (error.message.includes('NetworkError')) {
+          this.error = 'No response received from server. Please check your network connection.';
+        } else {
+          this.error = `Error: ${error.message}`;
+        }
+        console.error('Error calculating tokens:', error);
+      }
+    }
+  },
 }
 </script>
 
