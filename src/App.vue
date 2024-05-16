@@ -49,7 +49,14 @@
           </div>
           <div class="flex items-center justify-between">
             <span>Converted Prompt:</span>
-            <span class="font-medium">Your prompt has been converted to GPT-4 format.</span>
+            <span class="font-medium ml-2">{{ formData.prompt }}</span>
+          </div>
+          <div v-if="error">
+            <span class="text-red-500">{{ error }}</span>
+          </div>
+          <div class="flex items-center justify-between" v-if="message">
+            <span>Result:</span>
+            <span class="font-medium ml-2">{{ message }}</span>
           </div>
         </div>
       </div>
@@ -79,7 +86,15 @@ export default {
       ],
       models: ['GPT-4-32k', 'GPT-4', 'GPT-3.5-Turbo'],
       languages: ['English', 'Vietnamese'],
+      pricing: {
+        'GPT-4-32k': 60.00,
+        'GPT-4': 30.00,
+        'GPT-3.5-Turbo': 0.50,
+      },
       result: null,
+      error: null,
+      price: 0,
+      message: null,
     };
   },
   methods: {
@@ -91,9 +106,7 @@ export default {
       }
     },
     async calculateTokens() {
-      // convert array to object
       const data = Object.assign({}, this.formData);
-      console.log(data);
       try {
         const response = await axios.post('https://tiktoken-beta.vercel.app/calculate_tokens', data, {
           headers: {
@@ -101,7 +114,13 @@ export default {
           }
         });
         this.result = response.data;
-        console.log(this.result);
+        this.error = null;
+        this.calculatePrice(this.formData.model, this.result.tokens);
+        this.message = `
+                Conversion successful 👌👌🏻. 
+                You have received ${this.result.tokens} tokens ⛳. 
+                Price: $${this.price} USD 💲.
+        `;
       } catch (error) {
         if (error.message.includes('NetworkError')) {
           this.error = 'No response received from server. Please check your network connection.';
@@ -110,7 +129,11 @@ export default {
         }
         console.error('Error calculating tokens:', error);
       }
-    }
+    },
+    calculatePrice(model, tokenAmount) {
+      const pricePerMillionTokens = this.pricing[model];
+      this.price = (tokenAmount / 1000000) * pricePerMillionTokens;
+    },
   },
 }
 </script>
